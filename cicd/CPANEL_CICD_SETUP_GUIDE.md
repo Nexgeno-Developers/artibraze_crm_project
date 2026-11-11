@@ -45,7 +45,12 @@ sequenceDiagram
 cPanel → **File Manager** → right-click `public_html` → **Compress** → Zip. Download the zip, then delete it from the server.
 While you're in File Manager, **delete `public_html/clean_duplicate_receives.php`**. It's a leftover one-off script that anyone can open in a browser.
 
-### Step 2: Give cPanel read access to the private GitHub repo (Deploy Key)
+### Step 2: Give cPanel access to the repo
+
+**The repo is currently PUBLIC → skip this step.** cPanel can clone a public repo over HTTPS with no key (Step 3).
+
+<details>
+<summary>Only if the repo is made private later: set up a Deploy Key</summary>
 
 1. cPanel → **SSH Access** → **Manage SSH Keys**.
    - If a private key named **`id_rsa`** is already listed, use it and skip to item 3.
@@ -56,11 +61,14 @@ While you're in File Manager, **delete `public_html/clean_duplicate_receives.php
    - Title: `cPanel arfashion server`
    - Key: paste the public key
    - **Leave "Allow write access" unticked**, then click **Add key**.
+5. The clone URL must then be the SSH form, `git@github.com:Zaid5514/artibraze_crm_project.git`. If the Manage page doesn't let you edit the remote URL, remove the repo from Git Version Control (this deletes only the clone under `repositories/`, never `public_html`) and create it again with the SSH URL.
+
+</details>
 
 ### Step 3: Clone the repo in cPanel
 cPanel → **Git™ Version Control** → **Create**
 - **Clone a Repository:** ON
-- **Clone URL:** `git@github.com:Zaid5514/artibraze_crm_project.git`
+- **Clone URL:** `https://github.com/Zaid5514/artibraze_crm_project.git`
 - **Repository Path:** `repositories/artibraze_crm_project` ⚠️ **not** `public_html`
 - **Repository Name:** `artibraze_crm_project`
 - Click **Create**.
@@ -68,7 +76,8 @@ cPanel → **Git™ Version Control** → **Create**
 **If the clone fails:**
 | Error | Fix |
 |---|---|
-| `Host key verification failed` | File Manager → Settings → tick **Show Hidden Files**. Open `/home2/arfashionnexgeno/.ssh/`, create a file `known_hosts`, and paste in the `github.com …` lines from GitHub's [SSH key fingerprints page](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints). Retry. |
+| `Repository not found` / asks for a username | The repo is private, not public. Make it public (GitHub → Settings → General → Danger Zone → Change visibility) or use the Deploy Key in Step 2. |
+| `Host key verification failed` (SSH URL only) | File Manager → Settings → tick **Show Hidden Files**. Open `/home2/arfashionnexgeno/.ssh/`, create a file `known_hosts`, and paste in the `github.com …` lines from GitHub's [SSH key fingerprints page](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints). Retry. |
 | `Permission denied (publickey)` | The key isn't named `id_rsa`, or the deploy key wasn't added to *this* repo. |
 | Still stuck | Fallback: clone over HTTPS with a **fine-grained token** (GitHub → Settings → Developer settings → Fine-grained tokens → only this repo → *Contents: Read-only*). Clone URL: `https://<TOKEN>@github.com/Zaid5514/artibraze_crm_project.git`. Note: the token expires, and it stops working once the repo moves to Nexgeno. |
 
