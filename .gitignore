@@ -34,3 +34,14 @@ modules/kpi_management/KPI_RECONCILE_GUIDE.txt
 
 # Agents
 .agents/*
+
+# User-uploaded media (keep only the index.html guard files that are tracked)
+/media/**
+!/media/**/
+!/media/**/index.html
+
+# Server-only files created by cPanel / webhost (never deploy these)
+/.well-known/
+*.bak
+*.bak.*
+/cgi-bin/

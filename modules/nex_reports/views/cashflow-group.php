@@ -58,6 +58,10 @@
                     <h5 class="tw-mb-2 tw-mt-0 tw-font-bold">Financial Summary</h5>
                     <div class="tw-flex tw-flex-col tw-gap-1 text-sm">
                     <div class="tw-flex tw-justify-between">
+                        <span>Opening Balance</span>
+                        <span id="opening-balance" class="tw-font-medium">₹0.00</span>
+                    </div>
+                    <div class="tw-flex tw-justify-between">
                         <span>Total Income</span>
                         <span id="total-income" class="tw-font-medium">₹0.00</span>
                     </div>
@@ -74,8 +78,12 @@
                         <span id="total-debit-note" class="tw-font-medium">₹0.00</span>
                     </div>                    
                     <!-- <hr> -->
+                    <div class="tw-mt-2 tw-flex tw-justify-between">
+                        <span>Net Movement (Period)</span>
+                        <span id="period-net-balance" class="tw-font-medium">₹0.00</span>
+                    </div>
                     <div class="tw-mt-2 tw-flex tw-justify-between tw-font-bold">
-                        <span>Net Balance</span>
+                        <span>Closing Balance</span>
                         <span id="net-balance">₹0.00</span>
                     </div>
                     </div>
@@ -88,12 +96,13 @@
                     <div class="panel-body">
                         <h5 class="table-heading">Income Report</h5>
                         <?php
-                            render_datatable([
-                                'Date',
-                                'Amount',
-                                'Customer',
-                                'Note',
-                            ], 'income-table', ['table-small']);
+render_datatable([
+                                 'Date',
+                                 'Amount',
+                                 'Customer',
+                                 'Note',
+                                 'Action',
+                             ], 'income-table', ['table-small']);
 
                         ?>
                     </div>
@@ -110,6 +119,7 @@
                                 'Amount',
                                 'Vendor',
                                 'Note',
+                                'Action',
                                 //'GID',
                                 //'Payment ID',
                                 //'Purchase Invoice',
@@ -228,16 +238,22 @@
       const expense = parseFloat($('#total-expense').text().replace(/[^0-9.-]+/g,"")) || 0;
       const purchaseExpense = parseFloat($('#total-purchase-expense').text().replace(/[^0-9.-]+/g,"")) || 0;
       const debitNote = parseFloat($('#total-debit-note').text().replace(/[^0-9.-]+/g,"")) || 0;
+      const openingBalance = parseFloat($('#opening-balance').text().replace(/[^0-9.-]+/g,"")) || 0;
       var currencySymbol = '<?php echo $this->currencies_model->get_base_currency()->symbol; ?>';
       
-      // Subtract expenses and debit notes from income
-      const netBalance = income - (expense + purchaseExpense + debitNote);
+      // Movement in the selected period
+      const periodNet = income - (expense + purchaseExpense + debitNote);
+      // Closing balance = opening balance + period movement
+      const netBalance = openingBalance + periodNet;
       
       // Format the number with 2 decimal places and currency symbol
+      const formattedPeriodNet = currencySymbol + periodNet.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
       const formattedBalance = currencySymbol + netBalance.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
       
-      // Update the net balance display
+      // Update the period net and closing balance display
+      const $periodNetElement = $('#period-net-balance');
       const $netBalanceElement = $('#net-balance');
+      $periodNetElement.text(formattedPeriodNet);
       $netBalanceElement.text(formattedBalance);
       
       // Change color based on positive/negative
@@ -246,6 +262,30 @@
       } else {
           $netBalanceElement.removeClass('text-success').addClass('text-danger');
       }
+  }
+
+  // Function to fetch and update opening balance
+  function updateOpeningBalance() {
+      const startDate = $('#start_date').val();
+
+      $.get(admin_url + 'nex_reports/cashflow_group/opening_balance', { start_date: startDate })
+          .done(function (response) {
+              let data = response;
+
+              if (typeof response === 'string') {
+                  try {
+                      data = JSON.parse(response);
+                  } catch (e) {
+                      return;
+                  }
+              }
+
+              if (data.opening_balance) {
+                  $('#opening-balance').text(data.opening_balance);
+                  // Opening balance changed, recompute net balance
+                  updateNetBalance();
+              }
+          });
   }
 
   // Reusable function to initialize a report table with filter/reset support
@@ -283,6 +323,7 @@
       const startDate = $('#start_date').val();
       const endDate = $('#end_date').val();
       const query = `?start_date=${startDate}&end_date=${endDate}`;
+      updateOpeningBalance();
       table.ajax.url(admin_url + 'nex_reports/' + urlSegment + query).load();
     });
 
@@ -290,6 +331,7 @@
     $('#reset-filter').on('click', function () {
       $('#start_date').val('<?php echo date("Y-m-d") ?>');
       $('#end_date').val('<?php echo date("Y-m-d") ?>');
+      updateOpeningBalance();
       table.ajax.url(admin_url + 'nex_reports/' + urlSegment).load();
     });
   }
@@ -330,7 +372,10 @@
         [7,8,9], // Column index to hide 
         'total-debit-note', // Total field ID
         'total_debits'     // JSON response key from server (matches your PHP code)
-    );                
+    );
+
+    // Initial opening balance load
+    updateOpeningBalance();
   });
 
     $(function () {
@@ -379,6 +424,56 @@ function purchase_expense_by_gid(groupId, amount) {
       }
     }
   );    
+}
+
+function delete_income_group(groupId) {
+  if (!confirm('Are you sure you want to delete this income group?')) {
+    return;
+  }
+
+  $.ajax({
+    url: admin_url + 'nex_reports/cashflow_group/delete_income_group',
+    type: 'POST',
+    dataType: 'json',
+    data: { group_id: groupId },
+    success: function(response) {
+      if (response.success) {
+        alert(response.message);
+        $('.table-income-table').DataTable().ajax.reload(null, false);
+        updateOpeningBalance();
+      } else {
+        alert(response.message);
+      }
+    },
+    error: function() {
+      alert('Failed to delete income group');
+    }
+  });
+}
+
+function delete_purchase_expense_group(groupId) {
+  if (!confirm('Are you sure you want to delete this purchase expense group?')) {
+    return;
+  }
+
+  $.ajax({
+    url: admin_url + 'nex_reports/cashflow_group/delete_purchase_expense_group',
+    type: 'POST',
+    dataType: 'json',
+    data: { group_id: groupId },
+    success: function(response) {
+      if (response.success) {
+        alert(response.message);
+        $('.table-purchase-expense-table').DataTable().ajax.reload(null, false);
+        updateOpeningBalance();
+      } else {
+        alert(response.message);
+      }
+    },
+    error: function() {
+      alert('Failed to delete purchase expense group');
+    }
+  });
 }
 
 function centralize_expense() {

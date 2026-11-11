@@ -123,20 +123,14 @@ $output['total_expense'] = app_format_money($totalExpense, get_base_currency());
 foreach ($rResult as $aRow) {
     $row = [];
     $row[] = '<span data-order="' . strtotime($aRow['pay_date']) . '">' . _d($aRow['pay_date']) . '</span>';
-    $row[] = '<a href="javascript:void(0)" onclick="purchase_expense_by_gid(' 
+$row[] = '<a href="javascript:void(0)" onclick="purchase_expense_by_gid(' 
           . $aRow['group_id'] 
           . ', \'' . app_format_money($aRow['amount'] ?? 0, get_base_currency()) . '\')">'
           . app_format_money($aRow['amount'] ?? 0, get_base_currency()) 
           . '</a>'; 
     $row[] = '<a href="' . admin_url('purchase/vendor/' . $aRow['vendor_id']) . '" target="_blank">' . $aRow['vendor_company'] . '</a>';
     $row[] = $aRow['note'] ?? '-';   
-    //$row[] = html_escape($aRow['group_id']); // Group ID
-    //$row[] = '<a href="' . admin_url('purchase/payment_invoice/' . $aRow['payment_id']) . '" target="_blank">' . $aRow['payment_id'] . '</a>';
-    //$row[] = '<a href="' . admin_url('purchase/purchase_invoice/' . $aRow['pur_invoice_id']) . '" target="_blank">' . $aRow['pur_invoice_id'] . '</a>';
-    //$row[] = $aRow['paymentmode'] ?? '';
-    //$row[] = $aRow['transactionid'] ?? '';
-    
-    //$row[] = $aRow['vendor_id'];
+    $row[] = '<a href="javascript:void(0)" class="btn btn-danger btn-xs" onclick="delete_purchase_expense_group(' . $aRow['group_id'] . ')"><i class="fa fa-trash"></i></a>';
 
     $output['aaData'][] = $row;
 }

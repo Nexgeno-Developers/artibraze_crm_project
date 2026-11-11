@@ -133,6 +133,7 @@ foreach ($rResult as $aRow) {
           . '</a>';
     $row[] = '<a href="' . admin_url('clients/client/' . $aRow['clientid']) . '" target="_blank">' . $aRow['client_company'] . '</a>';
     $row[] = html_escape($aRow['note']) ?? '-';  
+    $row[] = '<a href="javascript:void(0)" class="btn btn-danger btn-xs" onclick="delete_income_group(' . $aRow['group_id'] . ')"><i class="fa fa-trash"></i></a>';
 
     $output['aaData'][] = $row;
 }

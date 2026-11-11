@@ -14369,6 +14369,9 @@ class Warehouse_model extends App_Model {
 	    	array_push($new_array, [
 	    		'id' => $values['id'],
 	    		'label' => $values['commodity_code'].'_'.$values['description'],
+	    		'unit_conversion_type' => isset($values['unit_conversion_type']) ? $values['unit_conversion_type'] : '',
+	    		'unit_conversion_value' => isset($values['unit_conversion_value']) ? $values['unit_conversion_value'] : '',
+	    		'conversion_unit' => isset($values['conversion_unit']) ? $values['conversion_unit'] : '',
 
 	    	]);
     	}
@@ -14609,20 +14612,20 @@ class Warehouse_model extends App_Model {
 
 			$es_detail = [];
 			$row = [];
-			$header = [];
+			foreach ($opening_stock_detail as $key => $value) {
+				$commodity_id = isset($value[1]) ? $value[1] : null;
+				$warehouse_id = isset($value[2]) ? $value[2] : null;
+				$inventory_number = isset($value[5]) ? $value[5] : null;
 
-			$header[] = 'id';
-			$header[] = 'commodity_id';
-			$header[] = 'warehouse_id';
-			$header[] = 'lot_number';
-			$header[] = 'expiry_date';
-			$header[] = 'inventory_number';
-
-			
-			foreach ($opening_stock_detail as $key => $value) {				
-
-				if($value[1] != '' && $value[1] != null && $value[2] != '' && $value[2] != null && $value[5] !== '' && $value[5] !== null && $value[5] >= 0){
-					$es_detail[] = array_combine($header, $value);
+				if($commodity_id != '' && $commodity_id != null && $warehouse_id != '' && $warehouse_id != null && $inventory_number !== '' && $inventory_number !== null && $inventory_number >= 0){
+					$es_detail[] = [
+						'id' => isset($value[0]) ? $value[0] : null,
+						'commodity_id' => $commodity_id,
+						'warehouse_id' => $warehouse_id,
+						'lot_number' => isset($value[3]) ? $value[3] : null,
+						'expiry_date' => isset($value[4]) ? $value[4] : null,
+						'inventory_number' => $inventory_number,
+					];
 				}
 			}
 

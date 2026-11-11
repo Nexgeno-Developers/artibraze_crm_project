@@ -262,13 +262,13 @@ function warehouse_module_init_menu_items()
     }
 
     if (has_permission('wh_receipt_return_order', '', 'view') || has_permission('wh_receipt_return_order', '', 'view_own')) {
-        // $CI->app_menu->add_sidebar_children_item('warehouse', [
-        //     'slug'     => 'wa_manage_order_return',
-        //     'name'     => _l('inventory_receipt_inventory_delivery_returns_goods'),
-        //     'icon'     => 'fa fa-reply-all',
-        //     'href'     => admin_url('warehouse/manage_order_return'),
-        //     'position' => 7,
-        // ]);  
+        $CI->app_menu->add_sidebar_children_item('warehouse', [
+            'slug'     => 'wa_manage_order_return',
+            'name'     => _l('inventory_receipt_inventory_delivery_returns_goods'),
+            'icon'     => 'fa fa-reply-all',
+            'href'     => admin_url('warehouse/manage_order_return'),
+            'position' => 7,
+        ]);  
     }
 
     if (has_permission('wh_warehouse', '', 'view')) {
