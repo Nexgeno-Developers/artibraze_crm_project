@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# Pre-push hook to prevent direct pushes to the main deployment branch
+protected_branch="refs/heads/main"
+
+while read -r local_ref local_oid remote_ref remote_oid
+do
+    if [ "$remote_ref" = "$protected_branch" ]; then
+        echo ""
+        echo "========================================================================"
+        echo "❌ REJECTED: Direct push to '$remote_ref' is strictly prohibited!"
+        echo "   Branch 'main' triggers production deployment."
+        echo "   All changes must be made on a feature branch and merged via Pull Request."
+        echo "   (Refer to cicd/CPANEL_CICD_SETUP_GUIDE.md)"
+        echo "========================================================================"
+        echo ""
+        exit 1
+    fi
+done
+
+exit 0

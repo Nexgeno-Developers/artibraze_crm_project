@@ -1,0 +1,90 @@
+name: Deploy to cPanel Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to cPanel via SSH
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Deploy Code to Production
+        env:
+          SSH_HOST: ${{ secrets.CPANEL_SSH_HOST }}
+          SSH_PORT: ${{ secrets.CPANEL_SSH_PORT || 22 }}
+          SSH_USER: ${{ secrets.CPANEL_SSH_USER }}
+          SSH_KEY: ${{ secrets.CPANEL_SSH_KEY }}
+          PROJECT_PATH: ${{ secrets.CPANEL_PROJECT_PATH }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          # Save private key cleanly without CRLF issues
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          # Start ssh-agent and register identity key to prevent any /dev/tty interactive prompts
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
+
+          echo "=========================================="
+          echo "🚀 Connecting to cPanel Production via SSH"
+          echo "=========================================="
+
+          echo "Connecting as: $SSH_USER @ $SSH_HOST on port $SSH_PORT"
+
+          # Run deployment script over native OpenSSH
+          ssh \
+              -o PreferredAuthentications=publickey \
+              -T -o StrictHostKeyChecking=no \
+              -o KexAlgorithms=+diffie-hellman-group-exchange-sha256,diffie-hellman-group14-sha256 \
+              -o HostKeyAlgorithms=+ssh-ed25519,ssh-rsa,rsa-sha2-512,rsa-sha2-256 \
+              -o PubkeyAcceptedAlgorithms=+ssh-ed25519,ssh-rsa,rsa-sha2-512,rsa-sha2-256 \
+              -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" << EOF
+            set -e
+            echo "📁 Entering project directory: $PROJECT_PATH"
+            cd "$PROJECT_PATH"
+
+            echo "⚙️ Configuring safe directory & single-thread execution for cPanel..."
+            git config --global --add safe.directory "$PROJECT_PATH"
+            git config --global core.preloadIndex false
+            git config --global checkout.workers 1
+            git config --global pack.threads 1
+
+            if [ ! -d ".git" ]; then
+              echo "⚠️ Initializing Git repository..."
+              git init
+            fi
+
+            git remote set-url origin https://github.com/$REPO.git 2>/dev/null || git remote add origin https://github.com/$REPO.git
+
+            echo "🔄 Fetching latest code from GitHub..."
+            git fetch "https://x-access-token:${GH_TOKEN}@github.com/$REPO.git" main
+
+            echo "⬇️ Deploying main branch (preserving live ignored files)..."
+            git checkout -f -B main FETCH_HEAD
+            git reset --hard FETCH_HEAD
+
+            echo "🧹 Clearing CI cache..."
+            if [ -d "application/cache" ]; then
+              find application/cache/ -type f ! -name 'index.html' ! -name '.htaccess' -delete 2>/dev/null || true
+            fi
+
+            echo "=========================================="
+            echo "✅ Deployment Successful!"
+            echo "📌 Deployed Commit: \$(git log -1 --oneline)"
+            echo "=========================================="
+          EOF
