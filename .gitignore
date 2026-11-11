@@ -45,3 +45,6 @@ modules/kpi_management/KPI_RECONCILE_GUIDE.txt
 *.bak
 *.bak.*
 /cgi-bin/
+
+# Windows folder settings
+desktop.ini
