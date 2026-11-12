@@ -104,6 +104,9 @@ foreach ($statement['result'] as $data) {
             get_pur_invoice_number($data['invoice_id']),
             _d($data['duedate']),
         ]);
+        if (!empty($data['challan_numbers'])) {
+            $tblhtml .= ' - Challan: ' . e(implode(', ', array_column($data['challan_numbers'], 'number')));
+        }
     } elseif (isset($data['payment_id'])) {
         $tblhtml .= _l('statement_payment_details', [
             '#' . $data['payment_id'],

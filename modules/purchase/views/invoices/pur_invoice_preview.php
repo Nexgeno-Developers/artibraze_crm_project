@@ -172,6 +172,37 @@
 
 	         	<div class="tab-content">
 	         		<div role="tabpanel" class="tab-pane ptop10 active" id="tab_pur_invoice">
+	         			<?php
+	         			// Production details (normally only visible on the Custom fields tab), shown up front.
+	         			$mo_code_cf   = get_custom_field_value($pur_invoice->id, 'pur_invoice_manufacturing_order_code', 'pur_invoice');
+	         			$prod_code_cf = get_custom_field_value($pur_invoice->id, 'pur_invoice_production_code', 'pur_invoice');
+	         			$assigned_cf  = get_custom_field_value($pur_invoice->id, 'pur_invoice_assigned_information', 'pur_invoice');
+	         			if (!empty($challan_numbers) || $mo_code_cf != '' || $prod_code_cf != '' || $assigned_cf != '') { ?>
+	         			<div class="col-md-12 pad_left_0 pad_right_0 mbot15">
+	         				<h4 class="bold mtop0"><?php echo _l('Production Details'); ?></h4>
+	         				<div class="col-md-6 pad_left_0">
+	         					<?php if (!empty($challan_numbers)) { ?>
+	         					<p>Challan No:<span class="pull-right bold"><?php echo pur_statement_challan_links($challan_numbers); ?></span></p>
+	         					<hr class="mtop5 mbot5">
+	         					<?php } ?>
+	         					<?php if ($mo_code_cf != '') { ?>
+	         					<p>Manufacturing Order Code:<span class="pull-right bold"><?php echo e($mo_code_cf); ?></span></p>
+	         					<hr class="mtop5 mbot5">
+	         					<?php } ?>
+	         					<?php if ($prod_code_cf != '') { ?>
+	         					<p>Production Code:<span class="pull-right bold"><?php echo e($prod_code_cf); ?></span></p>
+	         					<?php } ?>
+	         				</div>
+	         				<?php if ($assigned_cf != '') { ?>
+	         				<div class="col-md-6">
+	         					<p class="bold">Assigned Information:</p>
+	         					<div style="white-space: pre-line;"><?php echo e(trim(preg_replace('/<br\s*\/?>/i', '', $assigned_cf))); ?></div>
+	         				</div>
+	         				<?php } ?>
+	         				<div class="clearfix"></div>
+	         				<hr class="hr-panel-heading" />
+	         			</div>
+	         			<?php } ?>
 	         			<div class="col-md-6 pad_left_0">
 	         				<div class="col-md-6 pad_left_0 border-right">
 	         					<p><?php echo _l('invoice_code').':'; ?><span class="pull-right bold"><?php echo pur_html_entity_decode($pur_invoice->invoice_number); ?></span></p>
