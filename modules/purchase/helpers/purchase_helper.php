@@ -1427,6 +1427,25 @@ function get_pur_contract_number($id){
 }
 
 /**
+ * Render challan numbers (from Purchase_model::get_invoice_challan_numbers) as links
+ * to their production receipt, opening in a new tab.
+ *
+ * @param  array $challans
+ * @return string
+ */
+function pur_statement_challan_links($challans)
+{
+    $links = [];
+    foreach ((array) $challans as $challan) {
+        // receipt_production subtracts 1 from sr_no, matching the MO page's Receipt link.
+        $url = admin_url('manufacturing/receipt_production/' . (int) $challan['bpi_id']) . '?sr_no=' . ((int) $challan['sr_no'] + 1);
+        $links[] = '<a href="' . $url . '" target="_blank" rel="noopener">' . e($challan['number']) . '</a>';
+    }
+
+    return implode(', ', $links);
+}
+
+/**
  * Gets the pur invoice number.
  *
  * @param        $id     The identifier

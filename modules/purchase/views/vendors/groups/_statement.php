@@ -69,6 +69,9 @@
             <?php
             if(isset($data['invoice_id'])) {
               echo _l('statement_invoice_details',array('<a href="'.admin_url('purchase/purchase_invoice/'.$data['invoice_id']).'" target="_blank">'.get_pur_invoice_number($data['invoice_id']).'</a>',_d($data['duedate'])));
+              if (!empty($data['challan_numbers'])) {
+                echo ' - Challan: ' . pur_statement_challan_links($data['challan_numbers']);
+              }
             } else if(isset($data['payment_id'])){
              echo _l('statement_payment_details',array('<a href="'.admin_url('purchase/payment_invoice/'.$data['payment_id']).'" target="_blank">'.'#'.$data['payment_id'].'</a>',get_pur_invoice_number($data['payment_invoice_id'])));
 
@@ -257,6 +260,9 @@ usort($groupedResults, function($a, $b) {
                         <?php
                         if(isset($data['invoice_id'])) {
                             echo _l('statement_invoice_details',array('<a href="'.admin_url('purchase/purchase_invoice/'.$data['invoice_id']).'" target="_blank">'.get_pur_invoice_number($data['invoice_id']).'</a>',_d($data['duedate'])));
+                            if (!empty($data['challan_numbers'])) {
+                                echo ' - Challan: ' . pur_statement_challan_links($data['challan_numbers']);
+                            }
                         } else if(isset($data['is_grouped_payment'])) {
                             // Grouped payment
                             echo '<b>' . e($data['note']) . '</b><br>';

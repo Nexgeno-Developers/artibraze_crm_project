@@ -9695,6 +9695,48 @@ class Purchase_model extends App_Model
     }
 
     /**
+     * Production challan numbers for purchase invoices raised from manufacturing.
+     *
+     * A challan number is the MO code plus the production assignment's position
+     * within that MO (same format as the production receipt, e.g. ARM/26-27/00387-1).
+     *
+     * @param  array $invoice_ids
+     * @return array invoice_id => list of ['number' => challan number, 'bpi_id' => production row id, 'sr_no' => position]
+     */
+    public function get_invoice_challan_numbers($invoice_ids)
+    {
+        $invoice_ids = array_values(array_filter(array_map('intval', (array) $invoice_ids)));
+        $logs_table = db_prefix() . 'mrp_bom_production_inventory_logs';
+        $bpi_table  = db_prefix() . 'mrp_bom_production_inventory';
+        $mo_table   = db_prefix() . 'mrp_manufacturing_orders';
+
+        if (empty($invoice_ids) || !$this->db->table_exists($logs_table)) {
+            return [];
+        }
+
+        $rows = $this->db->query('
+            SELECT DISTINCT log.pur_invoice_id, bpi.id AS bpi_id, mo.manufacturing_order_code,
+                (SELECT COUNT(*) FROM ' . $bpi_table . ' b2
+                  WHERE b2.manufacturing_order_id = bpi.manufacturing_order_id AND b2.id <= bpi.id) AS sr_no
+            FROM ' . $logs_table . ' log
+            JOIN ' . $bpi_table . ' bpi ON bpi.id = log.bom_production_inventory_id
+            JOIN ' . $mo_table . ' mo ON mo.id = bpi.manufacturing_order_id
+            WHERE log.pur_invoice_id IN (' . implode(',', $invoice_ids) . ')
+            ORDER BY bpi.id')->result_array();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[$row['pur_invoice_id']][] = [
+                'number' => $row['manufacturing_order_code'] . '-' . $row['sr_no'],
+                'bpi_id' => (int) $row['bpi_id'],
+                'sr_no'  => (int) $row['sr_no'],
+            ];
+        }
+
+        return $map;
+    }
+
+    /**
      * Get venor statement formatted
      * @param  mixed $customer_id vendor id
      * @param  string $from        date from
@@ -9749,6 +9791,12 @@ class Purchase_model extends App_Model
 
         $invoices = $this->db->query($sql . '
             ORDER By invoice_date DESC')->result_array();
+
+        $challans = $this->get_invoice_challan_numbers(array_column($invoices, 'invoice_id'));
+        foreach ($invoices as &$invoice) {
+            $invoice['challan_numbers'] = $challans[$invoice['invoice_id']] ?? [];
+        }
+        unset($invoice);
 
         // Debit notes
         $sql_debit_notes = 'SELECT

@@ -5205,6 +5205,8 @@ class purchase extends AdminController
         $data['members']           = $this->staff_model->get('', ['active' => 1]);
         $data['payment'] = $this->purchase_model->get_payment_invoice($id);
         $data['pur_invoice_attachments'] = $this->purchase_model->get_purchase_invoice_attachments($id);
+        $challans = $this->purchase_model->get_invoice_challan_numbers([$id]);
+        $data['challan_numbers'] = $challans[$id] ?? [];
         $this->load->view('invoices/pur_invoice_preview',$data);
     }
 
