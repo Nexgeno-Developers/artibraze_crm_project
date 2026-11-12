@@ -46,8 +46,8 @@
        <tr>
          <th><b><?php echo _l('statement_heading_date'); ?></b></th>
          <th><b><?php echo _l('statement_heading_details'); ?></b></th>
-         <th class="text-right"><b><?php echo _l('statement_heading_amount'); ?></b></th>
-         <th class="text-right"><b><?php echo _l('statement_heading_payments'); ?></b></b></th>
+         <th class="text-right"><b><?php echo _l('statement_heading_payments'); ?></b></th>
+         <th class="text-right"><b><?php echo _l('statement_heading_amount'); ?></b></b></th>
          <th class="text-right"><b><?php echo _l('statement_heading_balance'); ?></b></b></th>
        </tr>
      </thead>
@@ -232,8 +232,8 @@ usort($groupedResults, function($a, $b) {
                 <tr>
                     <th><b><?php echo _l('statement_heading_date'); ?></b></th>
                     <th><b><?php echo _l('statement_heading_details'); ?></b></th>
-                    <th class="text-right"><b><?php echo _l('statement_heading_amount'); ?></b></th>
-                    <th class="text-right"><b><?php echo _l('statement_heading_payments'); ?></b></b></th>
+                    <th class="text-right"><b><?php echo _l('statement_heading_payments'); ?></b></th>
+                    <th class="text-right"><b><?php echo _l('statement_heading_amount'); ?></b></b></th>
                     <th class="text-right"><b><?php echo _l('statement_heading_balance'); ?></b></b></th>
                 </tr>
             </thead>
