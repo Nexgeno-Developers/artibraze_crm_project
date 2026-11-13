@@ -1,7 +1,4 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home2/arfashionnexgeno/public_html/
-    - test -f "${DEPLOYPATH}index.php"
-    - /bin/rsync -av --no-p --no-g --no-o --chmod=D755,F644 --exclude '/.git*' --exclude '/.cpanel.yml' --exclude '/cicd/' --exclude '/application/config/app-config.php' --exclude '/.htaccess*' --exclude '/uploads/' --exclude '/modules/*/uploads/' --exclude '/media/' --exclude '/temp/' --exclude '/ci_sessions/' --exclude '/application/cache/' --exclude '/application/logs/' ./ $DEPLOYPATH
-    - find ${DEPLOYPATH}application/cache/ -type f ! -name 'index.html' ! -name '.htaccess' -delete 2>/dev/null || true
+    - /bin/bash cicd/deploy.sh
