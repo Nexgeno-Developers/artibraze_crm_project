@@ -25,7 +25,8 @@ jobs:
           SSH_PORT: ${{ secrets.CPANEL_SSH_PORT || 22 }}
           SSH_USER: ${{ secrets.CPANEL_SSH_USER }}
           SSH_KEY: ${{ secrets.CPANEL_SSH_KEY }}
-          PROJECT_PATH: ${{ secrets.CPANEL_PROJECT_PATH }}
+          SSH_PASSPHRASE: ${{ secrets.CPANEL_SSH_PASSPHRASE || '' }}
+          REPO_PATH: ${{ secrets.CPANEL_REPO_PATH || '/home2/arfashionnexgeno/repositories/artibraze_crm_project' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
@@ -36,17 +37,21 @@ jobs:
           printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-          # Start ssh-agent and register identity key to prevent any /dev/tty interactive prompts
+          # Strip the passphrase if one was set (supports RSA, ED25519, ECDSA)
+          if [ -n "$SSH_PASSPHRASE" ]; then
+            ssh-keygen -p -P "$SSH_PASSPHRASE" -N "" -f ~/.ssh/id_rsa >/dev/null 2>&1 || true
+          fi
+
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/id_rsa
 
           echo "=========================================="
           echo "🚀 Connecting to cPanel Production via SSH"
           echo "=========================================="
-
           echo "Connecting as: $SSH_USER @ $SSH_HOST on port $SSH_PORT"
 
-          # Run deployment script over native OpenSSH
+          # 1. Update the cPanel Git clone (~/repositories/...) to the latest main
+          # 2. Run cicd/deploy.sh: rsync into public_html (same as cPanel "Deploy HEAD Commit")
           ssh \
               -o PreferredAuthentications=publickey \
               -T -o StrictHostKeyChecking=no \
@@ -55,33 +60,23 @@ jobs:
               -o PubkeyAcceptedAlgorithms=+ssh-ed25519,ssh-rsa,rsa-sha2-512,rsa-sha2-256 \
               -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" << EOF
             set -e
-            echo "📁 Entering project directory: $PROJECT_PATH"
-            cd "$PROJECT_PATH"
+            echo "📁 Entering cPanel repository clone: $REPO_PATH"
+            cd "$REPO_PATH"
 
-            echo "⚙️ Configuring safe directory & single-thread execution for cPanel..."
-            git config --global --add safe.directory "$PROJECT_PATH"
+            git config --global --add safe.directory "$REPO_PATH"
             git config --global core.preloadIndex false
             git config --global checkout.workers 1
             git config --global pack.threads 1
 
-            if [ ! -d ".git" ]; then
-              echo "⚠️ Initializing Git repository..."
-              git init
-            fi
+            git remote set-url origin https://github.com/$REPO.git
 
-            git remote set-url origin https://github.com/$REPO.git 2>/dev/null || git remote add origin https://github.com/$REPO.git
+            echo "🔄 Fetching latest main from GitHub..."
+            git fetch "https://x-access-token:${GH_TOKEN}@github.com/$REPO.git" +main:refs/remotes/origin/main
+            git checkout -f main 2>/dev/null || git checkout -f -B main origin/main
+            git reset --hard origin/main
 
-            echo "🔄 Fetching latest code from GitHub..."
-            git fetch "https://x-access-token:${GH_TOKEN}@github.com/$REPO.git" main
-
-            echo "⬇️ Deploying main branch (preserving live ignored files)..."
-            git checkout -f -B main FETCH_HEAD
-            git reset --hard FETCH_HEAD
-
-            echo "🧹 Clearing CI cache..."
-            if [ -d "application/cache" ]; then
-              find application/cache/ -type f ! -name 'index.html' ! -name '.htaccess' -delete 2>/dev/null || true
-            fi
+            echo "⬇️ Deploying into public_html..."
+            /bin/bash cicd/deploy.sh
 
             echo "=========================================="
             echo "✅ Deployment Successful!"
